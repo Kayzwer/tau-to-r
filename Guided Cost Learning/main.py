@@ -17,7 +17,7 @@ if __name__ == "__main__":
     reward_optimizer = optim.Adam(reward_function.parameters(), 0.0001)
     demonstrations = np.load("demonstrations.npy", allow_pickle=True)
     samples = np.empty(0, dtype=np.object0)
-    log_cache = torch.tensor(1 / np.log(action_size), dtype=torch.float64)
+    log_cache = torch.tensor(1 / np.log(action_size), dtype=torch.float32)
 
     DEMO_BATCH = 50
     TRAJ_TO_SAMPLE = 50
@@ -40,26 +40,28 @@ if __name__ == "__main__":
             selected_samples = np.append(selected_samples,
                                          selected_demonstrations)
 
-            total_demo_reward = torch.tensor(0.0, dtype=torch.float64)
+            total_demo_reward = torch.tensor(0.0, dtype=torch.float32)
             for demonstration in selected_demonstrations:
                 states, actions, _ = segregate_data(demonstration, state_size,
                                                     action_size - 1)
                 demo_reward = reward_function(torch.cat((states, actions),
                                                         dim=1))
-                demo_reward = (demo_reward - demo_reward.mean()) / \
-                    demo_reward.std()
+                if i < 10:
+                    demo_reward = (demo_reward - demo_reward.mean()) / \
+                        demo_reward.std()
                 total_demo_reward += torch.sum(demo_reward)
 
-            total_partition = torch.tensor(0.0, dtype=torch.float64)
-            total_partition_weight = torch.tensor(0.0, dtype=torch.float64)
+            total_partition = torch.tensor(0.0, dtype=torch.float32)
+            total_partition_weight = torch.tensor(0.0, dtype=torch.float32)
             for sample in selected_samples:
                 states, actions, action_probs = segregate_data(
                     sample, state_size, action_size - 1)
                 sample_reward = reward_function(torch.cat((states, actions),
                                                           dim=1))
-                sample_reward = torch.sum(
-                    (sample_reward - sample_reward.mean()) /
-                    sample_reward.std())
+                if i < 10:
+                    sample_reward = (sample_reward - sample_reward.mean()) / \
+                        sample_reward.std()
+                sample_reward = torch.sum(sample_reward)
                 partition_weight = torch.exp(sample_reward) / \
                     torch.prod(action_probs).clamp_min(1e-5)
                 total_partition_weight += partition_weight
@@ -70,13 +72,13 @@ if __name__ == "__main__":
             reward_loss.backward()
             reward_optimizer.step()
 
-        loss = torch.tensor(0.0, dtype=torch.float64)
+        loss = torch.tensor(0.0, dtype=torch.float32)
         for traj in trajs:
             states, actions, _ = segregate_data(
                 traj, state_size, action_size - 1)
             rewards = reward_function(
                 torch.cat((states, actions), dim=1)).detach().view(-1)
-            returns = torch.zeros_like(rewards, dtype=torch.float64)
+            returns = torch.zeros_like(rewards, dtype=torch.float32)
             returns_sum = 0.
             for j in range(len(returns) - 1, -1, -1):
                 returns_sum = rewards[j] + agent.gamma * returns_sum

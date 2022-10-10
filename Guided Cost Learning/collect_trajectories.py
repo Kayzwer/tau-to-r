@@ -15,15 +15,15 @@ def sample_trajectories(n: int, env: gym.Env, agent: Agent) -> np.ndarray:
             action, action_prob = agent.get_action_and_prob(state)
             trajectories.append([*state, action, action_prob])
             state, _, done, _, _ = env.step(action)
-        demonstrations.append(np.asarray(trajectories, dtype=np.float64))
+        demonstrations.append(np.asarray(trajectories, dtype=np.float32))
     return np.asarray(demonstrations, dtype=np.object0)
 
 
 def segregate_data(data: np.ndarray, state_size: int, action_size: int
                    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    return torch.as_tensor(data[:, :state_size], dtype=torch.float64), \
+    return torch.as_tensor(data[:, :state_size], dtype=torch.float32), \
         torch.as_tensor(data[:, state_size:state_size + action_size],
-                        dtype=torch.float64), \
+                        dtype=torch.float32), \
         torch.as_tensor(data[:, state_size + action_size:])
 
 

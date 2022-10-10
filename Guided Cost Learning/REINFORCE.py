@@ -39,13 +39,13 @@ class Agent:
         self.log_prob_memory = []
         self.reward_memory = []
         self.cache = torch.as_tensor(1 / np.log(output_size),
-                                     dtype=torch.float64)
+                                     dtype=torch.float32)
         self.optimizer = optim.RMSprop(self.policy_network.parameters(), lr)
 
     def choose_action_train(self, state: np.ndarray) -> int:
         action_prob_dist = Categorical(
             self.policy_network.forward(
-                torch.as_tensor(state, dtype=torch.float64)))
+                torch.as_tensor(state, dtype=torch.float32)))
         action = action_prob_dist.sample()
         log_prob = action_prob_dist.log_prob(action) * self.cache
         self.log_prob_memory.append(log_prob)
@@ -54,12 +54,12 @@ class Agent:
 
     def choose_action_test(self, state: np.ndarray) -> int:
         return self.policy_network.forward(
-            torch.as_tensor(state, dtype=torch.float64)
+            torch.as_tensor(state, dtype=torch.float32)
         ).detach().argmax().item()
 
     def get_action_and_prob(self, state: np.ndarray) -> Tuple[int, float]:
         softmax = self.policy_network(torch.as_tensor(
-            state, dtype=torch.float64)).detach()
+            state, dtype=torch.float32)).detach()
         action_probs = Categorical(softmax)
         action = action_probs.sample().item()
         prob = softmax[action].item()
@@ -71,13 +71,13 @@ class Agent:
     def update(self) -> float:
         self.optimizer.zero_grad()
         T = len(self.reward_memory)
-        returns = torch.zeros(T, dtype=torch.float64)
+        returns = torch.zeros(T, dtype=torch.float32)
         returns_sum = 0.0
         for i in range(T - 1, -1, -1):
             returns_sum = self.reward_memory[i] + self.gamma * returns_sum
             returns[i] = returns_sum
         returns = (returns - returns.mean()) / returns.std()
-        loss = torch.as_tensor(0.0, dtype=torch.float64)
+        loss = torch.as_tensor(0.0, dtype=torch.float32)
         for return_, log_prob, entropy in zip(returns, self.log_prob_memory,
                                               self.entropy_memory):
             loss -= (return_ * log_prob + self.entropy_coef * entropy)
