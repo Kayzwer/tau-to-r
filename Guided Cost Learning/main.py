@@ -46,9 +46,6 @@ if __name__ == "__main__":
                                                     action_size - 1)
                 demo_reward = reward_function(torch.cat((states, actions),
                                                         dim=1))
-                if i < 10:
-                    demo_reward = (demo_reward - demo_reward.mean()) / \
-                        demo_reward.std()
                 total_demo_reward += torch.sum(demo_reward)
 
             total_partition = torch.tensor(0.0, dtype=torch.float32)
@@ -58,9 +55,6 @@ if __name__ == "__main__":
                     sample, state_size, action_size - 1)
                 sample_reward = reward_function(torch.cat((states, actions),
                                                           dim=1))
-                if i < 10:
-                    sample_reward = (sample_reward - sample_reward.mean()) / \
-                        sample_reward.std()
                 sample_reward = torch.sum(sample_reward)
                 partition_weight = torch.exp(sample_reward) / \
                     torch.prod(action_probs).clamp_min(1e-5)
