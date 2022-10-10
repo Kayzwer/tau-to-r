@@ -3,6 +3,7 @@ from torch.distributions import Categorical
 from RewardFunction import RewardFunction
 from REINFORCE import Agent
 from torch import optim
+from torch import nn
 import numpy as np
 import torch
 import gym
@@ -12,9 +13,9 @@ if __name__ == "__main__":
     env = gym.make("CartPole-v1")
     state_size = env.observation_space.shape[0]
     action_size = env.action_space.n
-    agent = Agent(state_size, action_size, 0.001, 0.99, 0.01)
+    agent = Agent(state_size, action_size, 0.001, 0.99, 0.02)
     reward_function = RewardFunction(state_size + action_size - 1)
-    reward_optimizer = optim.Adam(reward_function.parameters(), 0.001,
+    reward_optimizer = optim.Adam(reward_function.parameters(), 0.00001,
                                   weight_decay=1e-4)
     demonstrations = np.load("demonstrations.npy", allow_pickle=True)
     samples = np.empty(0, dtype=np.object0)
@@ -47,17 +48,17 @@ if __name__ == "__main__":
                                                     action_size - 1)
                 demo_reward = reward_function(torch.cat((states, actions),
                                                         dim=1))
-                total_demo_reward += torch.mean(demo_reward)
+                total_demo_reward += torch.sum(demo_reward)
 
             total_partition_weight = torch.tensor(0.0, dtype=torch.float64)
             total_partition = torch.tensor(0.0, dtype=torch.float64)
             for sample in selected_samples:
                 states, actions, action_probs = segregate_data(
                     sample, state_size, action_size - 1)
-                sample_reward = torch.mean(reward_function(torch.cat((
+                sample_reward = torch.sum(reward_function(torch.cat((
                     states, actions), dim=1)))
                 partition_weight = torch.exp(sample_reward.detach()) / \
-                    torch.prod(action_probs).clamp_min(1e-5)
+                    torch.prod(action_probs).clamp_min(1e-3)
                 total_partition += (partition_weight * sample_reward)
                 total_partition_weight += partition_weight
 
@@ -65,6 +66,8 @@ if __name__ == "__main__":
             reward_loss = total_demo_reward / DEMO_BATCH - total_partition /\
                 total_partition_weight
             reward_loss.backward()
+            nn.utils.clip_grad_norm_(reward_function.parameters(), 1.,
+                                     norm_type=2)
             reward_optimizer.step()
 
         loss = torch.tensor(0.0, dtype=torch.float64)
