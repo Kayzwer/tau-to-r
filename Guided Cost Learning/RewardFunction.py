@@ -13,7 +13,7 @@ class RewardFunction(nn.Module):
         )
         for layer in self.layers:
             if isinstance(layer, nn.Linear):
-                deno = math.sqrt(128)
+                deno = math.sqrt(64)
                 torch.nn.init.uniform_(layer.weight, -1 / deno, 1 / deno)
                 layer.bias.data.fill_(0.01)
 

@@ -12,7 +12,7 @@ if __name__ == "__main__":
     env = gym.make("CartPole-v1")
     state_size = env.observation_space.shape[0]
     action_size = env.action_space.n
-    agent = Agent(state_size, action_size, 0.0001, 0.99, 0.02)
+    agent = Agent(state_size, action_size, 0.001, 0.99, 0.02)
     reward_function = RewardFunction(state_size + action_size - 1)
     reward_optimizer = optim.Adam(reward_function.parameters(), 0.0001)
     demonstrations = np.load("demonstrations.npy", allow_pickle=True)
@@ -30,9 +30,10 @@ if __name__ == "__main__":
             average_step += len(traj)
         average_step /= TRAJ_TO_SAMPLE
         for _ in range(50):
-            selected_samples_index = np.random.choice(len(samples), DEMO_BATCH)
-            selected_demonstrations_index = np.random.choice(len(demonstrations
-                                                                 ), DEMO_BATCH)
+            selected_samples_index = np.random.choice(len(samples), DEMO_BATCH,
+                                                      False)
+            selected_demonstrations_index = np.random.choice(
+                len(demonstrations), DEMO_BATCH, False)
 
             selected_samples = samples[selected_samples_index]
             selected_demonstrations = demonstrations[
