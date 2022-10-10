@@ -33,7 +33,7 @@ def main():
     action_size = env.action_space.n
     agent = Agent(state_size, action_size, 0.001, 0.99, 0.01)
     agent.policy_network.load_state_dict(torch.load("Policy_Gradient.pt"))
-    demonstrations = sample_trajectories(500, env, agent)
+    demonstrations = sample_trajectories(200, env, agent)
     np.save("demonstrations.npy", demonstrations)
     print("Demonstrations saved")
 

@@ -17,7 +17,7 @@ class Policy_Network(nn.Module):
             nn.ReLU(),
             nn.Linear(64, output_size),
             nn.Softmax(dim=-1)
-        ).double()
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.layers(x)
