@@ -3,7 +3,6 @@ from torch.distributions import Categorical
 from RewardFunction import RewardFunction
 from REINFORCE import Agent
 from torch import optim
-from torch import nn
 import numpy as np
 import torch
 import gym
@@ -13,25 +12,24 @@ if __name__ == "__main__":
     env = gym.make("CartPole-v1")
     state_size = env.observation_space.shape[0]
     action_size = env.action_space.n
-    agent = Agent(state_size, action_size, 0.001, 0.99, 0.02)
+    agent = Agent(state_size, action_size, 0.0001, 0.99, 0.02)
     reward_function = RewardFunction(state_size + action_size - 1)
-    reward_optimizer = optim.Adam(reward_function.parameters(), 0.00001,
-                                  weight_decay=1e-4)
+    reward_optimizer = optim.Adam(reward_function.parameters(), 0.0001)
     demonstrations = np.load("demonstrations.npy", allow_pickle=True)
     samples = np.empty(0, dtype=np.object0)
-    log_cache = torch.as_tensor(1 / np.log(action_size), dtype=torch.float64)
+    log_cache = torch.tensor(1 / np.log(action_size), dtype=torch.float64)
 
     DEMO_BATCH = 50
     TRAJ_TO_SAMPLE = 50
 
-    for i in range(1500):
+    for i in range(500):
         trajs = sample_trajectories(TRAJ_TO_SAMPLE, env, agent)
         samples = np.append(samples, trajs)
         average_step = 0.0
         for traj in trajs:
             average_step += len(traj)
         average_step /= TRAJ_TO_SAMPLE
-        for _ in range(25):
+        for _ in range(50):
             selected_samples_index = np.random.choice(len(samples), DEMO_BATCH)
             selected_demonstrations_index = np.random.choice(len(demonstrations
                                                                  ), DEMO_BATCH)
@@ -48,26 +46,28 @@ if __name__ == "__main__":
                                                     action_size - 1)
                 demo_reward = reward_function(torch.cat((states, actions),
                                                         dim=1))
+                demo_reward = (demo_reward - demo_reward.mean()) / \
+                    demo_reward.std()
                 total_demo_reward += torch.sum(demo_reward)
 
-            total_partition_weight = torch.tensor(0.0, dtype=torch.float64)
             total_partition = torch.tensor(0.0, dtype=torch.float64)
+            total_partition_weight = torch.tensor(0.0, dtype=torch.float64)
             for sample in selected_samples:
                 states, actions, action_probs = segregate_data(
                     sample, state_size, action_size - 1)
-                sample_reward = torch.sum(reward_function(torch.cat((
-                    states, actions), dim=1)))
-                partition_weight = torch.exp(sample_reward.detach()) / \
-                    torch.prod(action_probs).clamp_min(1e-3)
-                total_partition += (partition_weight * sample_reward)
+                sample_reward = reward_function(torch.cat((states, actions),
+                                                          dim=1))
+                sample_reward = torch.sum(
+                    (sample_reward - sample_reward.mean()) /
+                    sample_reward.std())
+                partition_weight = torch.exp(sample_reward) / \
+                    torch.prod(action_probs).clamp_min(1e-5)
                 total_partition_weight += partition_weight
-
+                total_partition += partition_weight.detach() * sample_reward
             reward_optimizer.zero_grad()
-            reward_loss = total_demo_reward / DEMO_BATCH - total_partition /\
+            reward_loss = total_demo_reward / DEMO_BATCH - total_partition / \
                 total_partition_weight
             reward_loss.backward()
-            nn.utils.clip_grad_norm_(reward_function.parameters(), 1.,
-                                     norm_type=2)
             reward_optimizer.step()
 
         loss = torch.tensor(0.0, dtype=torch.float64)
