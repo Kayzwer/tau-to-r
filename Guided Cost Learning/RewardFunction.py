@@ -1,4 +1,3 @@
-import math
 import torch
 from torch import nn
 
@@ -13,9 +12,7 @@ class RewardFunction(nn.Module):
         )
         for layer in self.layers:
             if isinstance(layer, nn.Linear):
-                deno = math.sqrt(64)
-                torch.nn.init.uniform_(layer.weight, -1 / deno, 1 / deno)
-                layer.bias.data.fill_(0.01)
+                torch.nn.init.xavier_normal_(layer.weight.data)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.layers(x)
