@@ -11,6 +11,10 @@ class RewardFunction(nn.Module):
             nn.Linear(128, 1),
             nn.ReLU()
         )
+        for layer in self.layers:
+            if isinstance(layer, nn.Linear):
+                nn.init.xavier_uniform_(layer.weight.data)
+                layer.bias.data.fill_(0.0)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return -self.layers(x)

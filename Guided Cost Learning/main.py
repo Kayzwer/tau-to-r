@@ -12,7 +12,7 @@ if __name__ == "__main__":
     env = gym.make("CartPole-v1")
     state_size = env.observation_space.shape[0]
     action_size = env.action_space.n
-    agent = Agent(state_size, action_size, 0.001, 0.99, 0.5)
+    agent = Agent(state_size, action_size, 0.001, 0.99, 0.1)
     reward_function = RewardFunction(state_size + action_size - 1)
     reward_optimizer = optim.Adam(reward_function.parameters(), 0.0001)
     demonstrations = np.load("demonstrations.npy", allow_pickle=True)
@@ -25,10 +25,6 @@ if __name__ == "__main__":
     for i in range(500):
         trajs = sample_trajectories(TRAJ_TO_SAMPLE, env, agent)
         samples = np.append(samples, trajs)
-        average_step = 0.0
-        for traj in trajs:
-            average_step += len(traj)
-        average_step /= TRAJ_TO_SAMPLE
         for _ in range(50):
             selected_samples_index = np.random.choice(len(samples), DEMO_BATCH)
             selected_demonstrations_index = np.random.choice(
@@ -90,5 +86,5 @@ if __name__ == "__main__":
         torch.save(agent.policy_network.state_dict(), "IRL_Policy_Gradient.pt")
         torch.save(reward_function.state_dict(),
                    "CartPole_Reward_Parameters.pt")
-        print(f"Iteration: {i + 1} done, Average Step: {average_step}")
+        print(f"Iteration: {i + 1} done")
     env.close()
