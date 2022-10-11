@@ -46,7 +46,6 @@ if __name__ == "__main__":
                                                     action_size - 1)
                 demo_reward = reward_function(torch.cat((states, actions),
                                                         dim=1))
-                demo_reward -= demo_reward.mean()
                 total_demo_reward += torch.sum(demo_reward)
 
             total_partition = torch.tensor(0.0, dtype=torch.float32)
@@ -54,15 +53,14 @@ if __name__ == "__main__":
             for sample in selected_samples:
                 states, actions, action_probs = segregate_data(
                     sample, state_size, action_size - 1)
-                sample_reward = reward_function(torch.cat(
-                    (states, actions), dim=1))
-                sample_reward = torch.sum(sample_reward - sample_reward.mean())
+                sample_reward = torch.sum(reward_function(torch.cat(
+                    (states, actions), dim=1)))
                 partition_weight = torch.exp(sample_reward.detach()) / \
                     torch.prod(action_probs).clamp_min_(1e-5)
                 total_partition_weight += partition_weight
                 total_partition += partition_weight * sample_reward
             reward_optimizer.zero_grad()
-            reward_loss = total_demo_reward / DEMO_BATCH - total_partition / \
+            reward_loss = total_demo_reward / DEMO_BATCH - total_partition /\
                 total_partition_weight
             reward_loss.backward()
             reward_optimizer.step()

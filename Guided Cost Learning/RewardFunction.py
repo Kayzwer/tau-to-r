@@ -7,12 +7,10 @@ class RewardFunction(nn.Module):
         super(RewardFunction, self).__init__()
         self.layers = nn.Sequential(
             nn.Linear(input_size, 128),
-            nn.Tanh(),
-            nn.Linear(128, 1)
+            nn.ReLU(),
+            nn.Linear(128, 1),
+            nn.ReLU()
         )
-        for layer in self.layers:
-            if isinstance(layer, nn.Linear):
-                torch.nn.init.xavier_normal_(layer.weight.data)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.layers(x)
+        return -self.layers(x)
