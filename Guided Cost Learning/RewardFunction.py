@@ -7,7 +7,7 @@ class RewardFunction(nn.Module):
         super(RewardFunction, self).__init__()
         self.layers = nn.Sequential(
             nn.Linear(input_size, 128),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(128, 1),
             nn.ReLU()
         )
