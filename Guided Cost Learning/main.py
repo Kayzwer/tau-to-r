@@ -65,6 +65,7 @@ if __name__ == "__main__":
         loss.backward()
         agent.optimizer.step()
         print(f"Iteration: {i + 1}, Step: {len(traj)}")
-    torch.save(agent.policy_network.state_dict(), "IRL_Policy_Gradient.pt")
-    torch.save(reward_function.state_dict(), "CartPole_Reward_Parameters.pt")
+        torch.save(agent.policy_network.state_dict(), "IRL_Policy_Gradient.pt")
+        torch.save(reward_function.state_dict(), "CartPole_Reward_Parameters.p"
+                   "t")
     env.close()
