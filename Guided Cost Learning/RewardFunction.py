@@ -8,13 +8,8 @@ class RewardFunction(nn.Module):
         self.layers = nn.Sequential(
             nn.Linear(input_size, 128),
             nn.ReLU(),
-            nn.Linear(128, 1),
-            nn.ReLU()
+            nn.Linear(128, 1)
         )
-        for layer in self.layers:
-            if isinstance(layer, nn.Linear):
-                nn.init.xavier_uniform_(layer.weight.data)
-                layer.bias.data.fill_(0.0)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return -self.layers(x)
+        return self.layers(x)
