@@ -31,7 +31,7 @@ if __name__ == "__main__":
         sample = np.vstack((traj, selected_demonstration))
 
         demo_states, demo_actions, _ = segregate_data(
-            demonstration, state_size, action_size - 1)
+            selected_demonstration, state_size, action_size - 1)
         demo_rewards = reward_function(torch.cat((demo_states, demo_actions),
                                                  dim=1))
 
@@ -46,27 +46,25 @@ if __name__ == "__main__":
         reward_loss.backward()
         reward_optimizer.step()
 
-        if i % 5 == 0:
-            states, actions, _ = segregate_data(traj, state_size,
-                                                action_size - 1)
-            rewards = reward_function(torch.cat((states, actions), dim=1)
-                                      ).detach().view(-1)
-            returns = torch.zeros_like(rewards, dtype=torch.float32)
-            returns_sum = 0.
-            for j in range(len(returns) - 1, -1, -1):
-                returns_sum = rewards[j] + agent.gamma * returns_sum
-                returns[j] = returns_sum
-            returns = (returns - returns.mean()) / returns.std()
-            action_prob_dists = Categorical(agent.policy_network(states))
-            log_probs = (action_prob_dists.log_prob(actions.view(-1)) *
-                         log_cache)
-            entropies = (action_prob_dists.entropy() * log_cache)
-            loss = -(torch.sum(log_probs * returns) + torch.sum(entropies) *
-                     agent.entropy_coef)
-            agent.optimizer.zero_grad()
-            loss.backward()
-            agent.optimizer.step()
-        print(f"Iteration: {i + 1}, Traj_Step: {len(traj)}")
+        states, actions, _ = segregate_data(traj, state_size,
+                                            action_size - 1)
+        rewards = reward_function(torch.cat((states, actions), dim=1)
+                                  ).detach().view(-1)
+        returns = torch.zeros_like(rewards, dtype=torch.float32)
+        returns_sum = 0.
+        for j in range(len(returns) - 1, -1, -1):
+            returns_sum = rewards[j] + agent.gamma * returns_sum
+            returns[j] = returns_sum
+        returns = (returns - returns.mean()) / returns.std()
+        action_prob_dists = Categorical(agent.policy_network(states))
+        log_probs = (action_prob_dists.log_prob(actions.view(-1)) * log_cache)
+        entropies = (action_prob_dists.entropy() * log_cache)
+        loss = -(torch.sum(log_probs * returns) + torch.sum(entropies) *
+                 agent.entropy_coef)
+        agent.optimizer.zero_grad()
+        loss.backward()
+        agent.optimizer.step()
+        print(f"Iteration: {i + 1}, Step: {len(traj)}")
     torch.save(agent.policy_network.state_dict(), "IRL_Policy_Gradient.pt")
     torch.save(reward_function.state_dict(), "CartPole_Reward_Parameters.pt")
     env.close()
